@@ -12,13 +12,13 @@ export const metadata: Metadata = {
     title: 'VantageOps — Enterprise Decision Intelligence',
     description: 'Forecast revenue, prioritize operational risk, and test business scenarios with a traceable Python analytics pipeline.',
     type: 'website',
-    images: [{ url: '/og.png', width: 1730, height: 909, alt: 'VantageOps enterprise decision intelligence dashboard' }],
+    images: [{ url: '/og.jpg', width: 1200, height: 630, alt: 'VantageOps enterprise decision intelligence dashboard' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'VantageOps — Enterprise Decision Intelligence',
     description: 'Enterprise decision intelligence, powered by Python.',
-    images: ['/og.png'],
+    images: ['/og.jpg'],
   },
 };
 
