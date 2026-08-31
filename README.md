@@ -7,8 +7,6 @@
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=101820)
 ![License](https://img.shields.io/badge/license-MIT-2c7668)
 
-> **[Open the live recruiter demo](SITE_URL_PLACEHOLDER)**
-
 VantageOps turns raw sales, product, supplier, and inventory records into decisions an operations leader can act on. It demonstrates the full path from data ingestion and quality checks to SQL models, KPIs, forecasting, risk alerts, and an interactive executive dashboard.
 
 ![VantageOps executive overview](docs/images/01-overview.png)
