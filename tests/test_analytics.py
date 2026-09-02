@@ -1,7 +1,7 @@
 import pandas as pd
 
 from pipeline.analytics import calculate_kpis, enrich_sales, forecast_revenue, monthly_mart, validate_sales
-from pipeline.dashboard_data import calculate_scenario, load_snapshot
+from pipeline.dashboard_data import analyze_uploaded_sales, calculate_scenario, load_snapshot
 from pipeline.generate_sample_data import PRODUCTS, generate_sales
 
 
@@ -47,3 +47,32 @@ def test_scenario_reacts_to_business_assumptions():
     assert growth["revenue"] > baseline["revenue"]
     assert growth["working_capital"] > baseline["working_capital"]
     assert 82 <= growth["service_level_pct"] <= 99.5
+
+
+def test_uploaded_transactions_become_monthly_product_sales():
+    frame = pd.DataFrame(
+        {
+            "Sale Date": ["2026-01-04", "2026-01-18", "2026-02-03", "not-a-date"],
+            "Item": ["Analytics Pro", "Workflow Hub", "Analytics Pro", "Support AI"],
+            "Qty": [2, 1, 3, 4],
+            "Price": [10, 20, 10, 5],
+            "Discount": [10, 0, 0.05, 0],
+        }
+    )
+    result = analyze_uploaded_sales(frame)
+    assert len(result.clean) == 3
+    assert result.rejected_rows == 1
+    assert len(result.monthly) == 2
+    assert result.monthly.iloc[0]["net_revenue"] == 38
+    assert result.monthly.iloc[1]["net_revenue"] == 28.5
+    assert set(result.monthly_product["product"]) == {"Analytics Pro", "Workflow Hub"}
+
+
+def test_uploaded_transactions_require_clear_sales_fields():
+    try:
+        analyze_uploaded_sales(pd.DataFrame({"date": ["2026-01-01"], "product": ["A"]}))
+    except ValueError as error:
+        assert "quantity" in str(error)
+        assert "unit_price" in str(error)
+    else:
+        raise AssertionError("Expected an incomplete sales upload to be rejected")

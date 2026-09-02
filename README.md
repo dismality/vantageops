@@ -45,9 +45,23 @@ This page answers, “What could happen if the plan changes?” Adjust demand, p
 
 ### 5. Data pipeline
 
-This page answers, “Can I trust these numbers?” It shows ingestion, validation, quarantine, transformation, and publishing. A user can upload a CSV and run the real Python validation rules in memory.
+This page answers, “Can I trust these numbers—and what did we sell each month?” It shows ingestion, validation, quarantine, transformation, and publishing. A user can upload a transaction-level CSV with one row per purchase. Python checks each row, calculates revenue after discounts, and creates a stacked monthly bar chart by product, summary metrics, and a recent-purchases table. The file stays in memory and is not stored.
 
-![Python data pipeline and CSV validation experience](docs/images/05-data-pipeline.png)
+![Python data pipeline with an uploaded monthly sales report](docs/images/05-data-pipeline.png)
+
+#### Sales upload format
+
+Start with the included [example sales file](assets/sample_sales_upload.csv), or use these common column names:
+
+| Information | Suggested column | Also accepted |
+| --- | --- | --- |
+| When the purchase happened | `sale_date` | `order_date`, `date`, `transaction_date`, `sold_at` |
+| What was purchased | `product` | `product_name`, `item`, `item_name`, `product_id` |
+| How many units were sold | `quantity` | `qty`, `units`, `units_sold` |
+| Price for one unit | `unit_price` | `price`, `sale_price`, `price_each` |
+| Optional discount | `discount_pct` | `discount`, `discount_percent` |
+
+Discounts can be written as `10` or `0.10` for 10%. Rows with a bad date, missing product, zero/negative quantity, or invalid price are rejected and counted clearly instead of silently changing the report.
 
 ## Python API
 
@@ -91,7 +105,7 @@ flowchart LR
 - **Dash and Plotly:** interactive interface and charts defined in Python
 - **Flask:** read-only JSON API endpoints
 - **SQLite and SQL:** portable analytical storage and reusable transformation logic
-- **Pytest:** calculation, scenario, schema, and API tests
+- **Pytest:** calculation, scenario, upload analysis, schema, and API tests
 - **Gunicorn and Docker:** production server and reproducible deployment
 
 ## Run locally
@@ -138,7 +152,7 @@ vantageops/
 ├── app.py                       # Python dashboard entry point and callbacks
 ├── api.py                       # Python JSON endpoints
 ├── dashboard_views.py           # Python page layouts and Plotly figures
-├── assets/                      # Dashboard styles and brand assets
+├── assets/                      # Styles, brand assets, and example upload CSV
 ├── pipeline/
 │   ├── analytics.py             # Validation, KPIs, forecast, and risk rules
 │   ├── dashboard_data.py        # Shared dashboard/API snapshot and scenarios

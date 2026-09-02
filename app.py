@@ -8,10 +8,8 @@ from dash import Dash, Input, Output, State, callback, dcc, html
 from dash.exceptions import PreventUpdate
 
 from api import register_api
-from dashboard_views import kpi_card, money, shell
-from pipeline.analytics import validate_sales
-from pipeline.dashboard_data import calculate_scenario, load_snapshot
-from pipeline.generate_sample_data import PRODUCTS
+from dashboard_views import kpi_card, money, shell, uploaded_sales_figure
+from pipeline.dashboard_data import analyze_uploaded_sales, calculate_scenario, load_snapshot
 
 snapshot = load_snapshot()
 app = Dash(
@@ -102,28 +100,104 @@ def update_scenario(demand: float, price: float, cost: float, inventory: float):
 
 @callback(
     Output("upload-result", "children"),
+    Output("upload-analysis", "children"),
     Input("sales-upload", "contents"),
     State("sales-upload", "filename"),
 )
 def validate_upload(contents: str | None, filename: str | None):
-    """Validate a user-provided CSV in memory using the production rules."""
+    """Validate and summarize a user-provided transaction-level sales CSV."""
     if not contents:
         raise PreventUpdate
     try:
         _, encoded = contents.split(",", 1)
-        frame = pd.read_csv(io.StringIO(base64.b64decode(encoded).decode("utf-8")))
-        result = validate_sales(frame, PRODUCTS)
-        return html.Div(
+        decoded = base64.b64decode(encoded).decode("utf-8-sig")
+        frame = pd.read_csv(io.StringIO(decoded))
+        result = analyze_uploaded_sales(frame)
+        total_revenue = float(result.clean["net_revenue"].sum())
+        total_units = float(result.clean["quantity"].sum())
+        best_month = result.monthly.loc[result.monthly["net_revenue"].idxmax()]
+        preview = result.clean.sort_values("sale_date", ascending=False).head(6)
+        status = html.Div(
             className="upload-success",
             children=[
-                html.Strong(f"{filename}: validation complete"),
-                html.Span(f"{len(result.clean):,} rows accepted - {len(result.quarantined):,} quarantined"),
+                html.Strong(f"{filename}: monthly sales report ready"),
+                html.Span(f"{len(result.clean):,} purchases accepted - {result.rejected_rows:,} rows rejected"),
             ],
         )
+        analysis = html.Div(
+            className="panel uploaded-report",
+            children=[
+                html.Div(
+                    className="uploaded-report-head",
+                    children=[
+                        html.Div(
+                            children=[
+                                html.Div("YOUR UPLOADED DATA", className="eyebrow"),
+                                html.H2("Monthly sales report"),
+                                html.P("The chart groups every purchase by month and product. Hover over a bar for the exact revenue."),
+                            ]
+                        ),
+                        html.Span("Calculated in Python", className="python-badge"),
+                    ],
+                ),
+                html.Div(
+                    className="metrics-grid upload-metrics",
+                    children=[
+                        kpi_card("Net revenue", money(total_revenue), "After discounts"),
+                        kpi_card("Purchases", f"{len(result.clean):,}", "Accepted rows"),
+                        kpi_card("Units sold", f"{total_units:,.0f}", "Across all products"),
+                        kpi_card(
+                            "Best month",
+                            best_month["month"].strftime("%b %Y"),
+                            money(float(best_month["net_revenue"])),
+                        ),
+                    ],
+                ),
+                html.Div(
+                    className="upload-report-grid",
+                    children=[
+                        html.Div(
+                            className="upload-chart",
+                            children=dcc.Graph(
+                                figure=uploaded_sales_figure(result),
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
+                        ),
+                        html.Div(
+                            className="upload-preview",
+                            children=[
+                                html.Div("LATEST PURCHASES", className="eyebrow"),
+                                html.Table(
+                                    children=[
+                                        html.Thead(html.Tr([html.Th("Date"), html.Th("Product"), html.Th("Revenue")])),
+                                        html.Tbody(
+                                            [
+                                                html.Tr(
+                                                    [
+                                                        html.Td(row.sale_date.strftime("%d %b")),
+                                                        html.Td(str(row.product)),
+                                                        html.Td(money(float(row.net_revenue))),
+                                                    ]
+                                                )
+                                                for row in preview.itertuples()
+                                            ]
+                                        ),
+                                    ]
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        )
+        return status, analysis
     except Exception as error:
-        return html.Div(
-            className="upload-error",
-            children=[html.Strong(f"{filename}: validation failed"), html.Span(str(error))],
+        return (
+            html.Div(
+                className="upload-error",
+                children=[html.Strong(f"{filename}: report could not be created"), html.Span(str(error))],
+            ),
+            html.Div(),
         )
 
 

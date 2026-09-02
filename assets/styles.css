@@ -701,6 +701,31 @@ input {
   font-size: 12px;
 }
 
+.upload-fields {
+  margin: 13px 0 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.upload-fields span,
+.python-badge {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #edf5f2;
+  color: var(--green-dark);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.sample-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
 .upload-box {
   min-height: 96px;
   padding: 28px;
@@ -735,6 +760,96 @@ input {
 .upload-error {
   background: #fae4e1;
   color: #9a3d36;
+}
+
+.upload-analysis:not(:empty) {
+  margin-top: 18px;
+}
+
+.uploaded-report {
+  padding: 24px;
+}
+
+.uploaded-report-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.uploaded-report-head h2 {
+  margin: 3px 0 6px;
+}
+
+.uploaded-report-head p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.python-badge {
+  flex: 0 0 auto;
+  background: var(--mint);
+}
+
+.upload-metrics {
+  margin: 18px 0;
+}
+
+.upload-report-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(230px, .7fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.upload-chart,
+.upload-preview {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.upload-chart {
+  min-height: 330px;
+  padding: 5px;
+}
+
+.upload-preview {
+  padding: 18px;
+}
+
+.upload-preview table {
+  width: 100%;
+  margin-top: 13px;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.upload-preview th,
+.upload-preview td {
+  padding: 9px 5px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.upload-preview th:last-child,
+.upload-preview td:last-child {
+  text-align: right;
+}
+
+.upload-preview th {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.upload-preview td {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 @media (max-width: 1050px) {
@@ -775,7 +890,8 @@ input {
   .overview-grid,
   .two-column,
   .pipeline-grid,
-  .scenario-grid {
+  .scenario-grid,
+  .upload-report-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -842,5 +958,14 @@ input {
 
   .upload-result {
     grid-column: 1;
+  }
+
+  .uploaded-report-head {
+    display: block;
+  }
+
+  .python-badge {
+    display: inline-block;
+    margin-top: 12px;
   }
 }

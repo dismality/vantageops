@@ -3,7 +3,7 @@
 import plotly.graph_objects as go
 from dash import dcc, html
 
-from pipeline.dashboard_data import DashboardSnapshot, regional_performance
+from pipeline.dashboard_data import DashboardSnapshot, UploadedSalesAnalysis, regional_performance
 
 COLORS = {
     "ink": "#16332d",
@@ -99,6 +99,43 @@ def category_figure(data: DashboardSnapshot) -> go.Figure:
     )
     figure.update_layout(**graph_layout("Revenue by product category"))
     figure.update_xaxes(tickprefix="$", tickformat="~s")
+    return figure
+
+
+def uploaded_sales_figure(data: UploadedSalesAnalysis) -> go.Figure:
+    """Show uploaded monthly revenue as an easy-to-scan product breakdown."""
+    product_totals = (
+        data.monthly_product.groupby("product")["net_revenue"].sum().sort_values(ascending=False)
+    )
+    top_products = list(product_totals.head(5).index)
+    chart_data = data.monthly_product.copy()
+    chart_data["chart_product"] = chart_data["product"].where(
+        chart_data["product"].isin(top_products), "Other products"
+    )
+    chart_data = chart_data.groupby(["month", "chart_product"], as_index=False)["net_revenue"].sum()
+
+    palette = [COLORS["green_dark"], COLORS["green"], "#58aa96", "#8ccdbb", COLORS["amber"], "#b8c9c3"]
+    figure = go.Figure()
+    ordered_products = top_products + (["Other products"] if "Other products" in set(chart_data["chart_product"]) else [])
+    for index, product in enumerate(ordered_products):
+        product_data = chart_data.loc[chart_data["chart_product"] == product]
+        figure.add_trace(
+            go.Bar(
+                x=product_data["month"],
+                y=product_data["net_revenue"],
+                name=str(product),
+                marker={"color": palette[index % len(palette)]},
+                hovertemplate=f"{product}<br>%{{x|%b %Y}}<br>$%{{y:,.2f}}<extra></extra>",
+            )
+        )
+    layout = graph_layout("Monthly sales revenue by product")
+    layout["showlegend"] = True
+    layout["barmode"] = "stack"
+    layout["legend"] = {"orientation": "h", "y": 1.14, "x": 0, "font": {"size": 10}}
+    layout["margin"] = {"l": 46, "r": 18, "t": 70, "b": 42}
+    figure.update_layout(**layout)
+    figure.update_xaxes(tickformat="%b\n%Y", dtick="M1")
+    figure.update_yaxes(tickprefix="$", tickformat="~s")
     return figure
 
 
@@ -406,8 +443,21 @@ def pipeline_page(data: DashboardSnapshot) -> html.Div:
                     html.Div(
                         children=[
                             html.Div("TRY THE INGESTION EXPERIENCE", className="eyebrow"),
-                            html.H2("Validate a sales CSV"),
-                            html.P("Your file is checked in memory. Nothing is stored or sent outside this Python application."),
+                            html.H2("Chart your individual sales"),
+                            html.P(
+                                "Upload one row per purchase. Python checks the file, calculates net revenue, "
+                                "and turns the transactions into an easy monthly product chart."
+                            ),
+                            html.Div(
+                                className="upload-fields",
+                                children=[html.Span(field) for field in ("sale date", "product", "quantity", "unit price", "discount (optional)")],
+                            ),
+                            html.A(
+                                "Download example CSV",
+                                href="/assets/sample_sales_upload.csv",
+                                download="sample_sales_upload.csv",
+                                className="text-link sample-link",
+                            ),
                         ]
                     ),
                     dcc.Upload(
@@ -419,6 +469,7 @@ def pipeline_page(data: DashboardSnapshot) -> html.Div:
                     html.Div(id="upload-result", className="upload-result"),
                 ],
             ),
+            html.Div(id="upload-analysis", className="upload-analysis"),
         ]
     )
 
