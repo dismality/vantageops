@@ -74,9 +74,17 @@ def calculate_kpis(enriched: pd.DataFrame) -> dict[str, float]:
     """Calculate the four headline measures used by executives."""
     revenue = float(enriched["net_revenue"].sum())
     profit = float(enriched["gross_profit"].sum())
-    average_inventory_value = float((enriched["inventory_on_hand"] * enriched["unit_cost"]).mean())
-    annualized_cost = float((enriched["units"] * enriched["unit_cost"]).sum()) * (365 / max((enriched["order_date"].max() - enriched["order_date"].min()).days, 1))
-    return {"net_revenue": revenue, "gross_margin_pct": profit / revenue * 100, "inventory_turnover": annualized_cost / average_inventory_value, "accepted_rows": float(len(enriched))}
+    inventory_snapshots = enriched.sort_values("order_date").groupby(["month", "product_id"]).tail(1).copy()
+    inventory_snapshots["inventory_value"] = inventory_snapshots["inventory_on_hand"] * inventory_snapshots["unit_cost"]
+    average_inventory_value = float(inventory_snapshots.groupby("month")["inventory_value"].sum().mean())
+    covered_days = max((enriched["order_date"].max() - enriched["order_date"].min()).days, 1)
+    annualized_cost = float((enriched["units"] * enriched["unit_cost"]).sum()) * (365 / covered_days)
+    return {
+        "net_revenue": revenue,
+        "gross_margin_pct": profit / revenue * 100,
+        "inventory_turnover": annualized_cost / average_inventory_value,
+        "accepted_rows": float(len(enriched)),
+    }
 
 
 def build_risk_alerts(enriched: pd.DataFrame) -> list[dict[str, object]]:

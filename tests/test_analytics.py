@@ -1,6 +1,7 @@
 import pandas as pd
 
 from pipeline.analytics import calculate_kpis, enrich_sales, forecast_revenue, monthly_mart, validate_sales
+from pipeline.dashboard_data import calculate_scenario, load_snapshot
 from pipeline.generate_sample_data import PRODUCTS, generate_sales
 
 
@@ -37,3 +38,12 @@ def test_missing_schema_is_rejected():
         assert "Missing required columns" in str(error)
     else:
         raise AssertionError("Expected validation to reject an incomplete schema")
+
+
+def test_scenario_reacts_to_business_assumptions():
+    snapshot = load_snapshot()
+    baseline = calculate_scenario(snapshot, 0, 0, 0, 0)
+    growth = calculate_scenario(snapshot, 10, 4, 0, 8)
+    assert growth["revenue"] > baseline["revenue"]
+    assert growth["working_capital"] > baseline["working_capital"]
+    assert 82 <= growth["service_level_pct"] <= 99.5
